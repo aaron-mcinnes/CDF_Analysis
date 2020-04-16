@@ -12,7 +12,6 @@ library(tidyverse)
 library(patchwork)
 library(lmerTest)
 library(emmeans)
-library(stringr)
 
 directory <- dirname(rstudioapi::getSourceEditorContext()$path) #Directory of where script is saved
 dataFile <- paste0(directory, "/SimulatedData.xlsx")
@@ -52,7 +51,7 @@ skewness(dataPinch$Latency)
 skewness(dataBB_PinchFlex$Latency) 
 skewness(dataFDI_PinchFlex$Latency) 
 
-#Log transform and run dip test
+#Log transform and run dip test if skewed
 transformFlex <- cbind(dataFlex, transform = log(dataFlex$Latency))
 transformPinch <- cbind(dataPinch, transform = log(dataPinch$Latency))
 transformBB_PinchFlex <- cbind(dataBB_PinchFlex, transform = log(dataBB_PinchFlex$Latency))
@@ -178,8 +177,8 @@ t.test(Medians_SCM_PlusT4$Latency, Medians_SCM_MinusT4$Latency, paired = T, conf
 #############################    RUNNING CDF FOR EACH TASK     #######################################
 ######################################################################################################
 
-# Contains function to repeat across movement types - ...
-# ... Enter the dataframe you want to test and the mean SCM+/- values
+# Contains function to repeat across movement types - 
+# Enter the dataframe you want to test and the mean SCM+/- values
 # Get 10 quantile values for each subject and place into data frame
 # Average across participants to get mean latency at each quantile
 # Find the percentiles that closest match average SCM+ and SCM- trial latencies
@@ -247,6 +246,7 @@ CDF <- function(dataTask, MeanSCMPlus, MeanSCMMinus) {
   return(CDF_out)
 }
 
+#Function runs CDF analyses and extracts SCM+/- percentiles
 CDF(dataFlex, Mean_SCM_PlusT1, Mean_SCM_MinusT1) #dataframe, mean SCM+, mean SCM-
 
 #Store vals for later
@@ -271,11 +271,11 @@ sd(storeQuantileT1[,match_rowPlusT1])
 mean(storeQuantileT1[,match_rowMinusT1]) 
 sd(storeQuantileT1[,match_rowMinusT1]) 
 
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #============================ Run CDF for task 2 =====================================================
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#Function runs CDF analyses and extracts SCM+/- percentiles
 CDF(dataPinch, Mean_SCM_PlusT2, Mean_SCM_MinusT2)
 
 #Store vals for later
@@ -304,6 +304,7 @@ sd(storeQuantileT2[,match_rowMinusT2])
 #============================ Run CDF for task 3 =====================================================
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#Function runs CDF analyses and extracts SCM+/- percentiles
 CDF(dataBB_PinchFlex, Mean_SCM_PlusT3, Mean_SCM_MinusT3)
 
 #Store vals for later
@@ -332,6 +333,7 @@ sd(storeQuantileT3[,match_rowMinusT3])
 #============================ Run CDF for task 4 =====================================================
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#Function runs CDF analyses and extracts SCM+/- percentiles
 CDF(dataFDI_PinchFlex, Mean_SCM_PlusT4, Mean_SCM_MinusT4)
 
 #Store vals for later
@@ -375,6 +377,25 @@ sd(storeQuantileT4[,match_rowMinusT4])
 x_min <- min(rbind(dataFlex$Latency, dataPinch$Latency, dataBB_PinchFlex$Latency, dataFDI_PinchFlex$Latency)) - 10
 x_max <- max(rbind(dataFlex$Latency, dataPinch$Latency, dataBB_PinchFlex$Latency, dataFDI_PinchFlex$Latency)) + 10
 
+#Finding max frequency to set y axis limits in histogram
+cutsPlusT1 <- cut(dataFlex$Latency[dataFlex$SCM == "SCM+"], breaks=seq(0,max(dataFlex$Latency), by = 5)) #bin SCM+ data
+cutsPlusT2 <- cut(dataPinch$Latency[dataPinch$SCM == "SCM+"], breaks=seq(0,max(dataPinch$Latency), by = 5))
+cutsPlusT3 <- cut(dataBB_PinchFlex$Latency[dataBB_PinchFlex$SCM == "SCM+"], breaks=seq(0,max(dataBB_PinchFlex$Latency), by = 5))
+cutsPlusT4 <- cut(dataFDI_PinchFlex$Latency[dataFDI_PinchFlex$SCM == "SCM+"], breaks=seq(0,max(dataFDI_PinchFlex$Latency), by = 5))
+cutsMinT1 <- cut(dataFlex$Latency[dataFlex$SCM == "SCM-"], breaks=seq(0,max(dataFlex$Latency), by = 5)) #bin SCM- data
+cutsMinT2 <- cut(dataPinch$Latency[dataPinch$SCM == "SCM-"], breaks=seq(0,max(dataPinch$Latency), by = 5))
+cutsMinT3 <- cut(dataBB_PinchFlex$Latency[dataBB_PinchFlex$SCM == "SCM-"], breaks=seq(0,max(dataBB_PinchFlex$Latency), by = 5))
+cutsMinT4 <- cut(dataFDI_PinchFlex$Latency[dataFDI_PinchFlex$SCM == "SCM-"], breaks=seq(0,max(dataFDI_PinchFlex$Latency), by = 5))
+
+maxFreq <- max(c(max(table(cutsPlusT1)), #Find max frequency across tasks
+                max(table(cutsPlusT2)),
+                max(table(cutsPlusT3)),
+                max(table(cutsPlusT4)),
+                max(table(cutsMinT1)),
+                max(table(cutsMinT2)),
+                max(table(cutsMinT3)),
+                max(table(cutsMinT4)))) + 1 #add some space for the legend
+
 # Function to round axis limits to nearest 10
 Round <- function(x,y) {
   if((y - x %% y) <= x %% y) { x + (y - x %% y)}
@@ -406,13 +427,14 @@ plotSCM_T1 <- ggplot(dataT1, aes(x=Latency, fill = Cat)) +
   facet_grid(rows = vars(SCM))+
   labs(y="Frequency", x="Pre-motor reaction time (ms)")+
   scale_x_continuous(limits = c(x_min, x_max), breaks = seq(x_min, x_max, by = 30))+
-  scale_y_continuous(limits = c(0,25), breaks = seq(0, 25, by = 10))+
+  scale_y_continuous(limits = c(0, maxFreq), breaks = seq(0, maxFreq, by = 10))+
   theme_bw()+
   scale_fill_discrete(name = "Categorory", labels = c("Startle", "Non-Startle"))+
   theme(
     legend.position = c(.7, .2),
     axis.title.x = element_blank(),
-    axis.title.y =element_text(family="Arial", size=12)
+    axis.title.y =element_text(family="Arial", size=12),
+    axis.text.y = element_text(family="Arial", size=11),
   )
 
 ############################ Bayesian test of association ############################################
@@ -444,13 +466,14 @@ plotSCM_T2 <- ggplot(dataT2, aes(x=Latency, fill = Cat)) +
   facet_grid(rows = vars(SCM))+
   labs(y="Frequency", x="Pre-motor reaction time (ms)")+
   scale_x_continuous(limits = c(x_min, x_max), breaks = seq(x_min, x_max, by = 30))+
-  scale_y_continuous(limits = c(0,25), breaks = seq(0, 25, by = 10))+
+  scale_y_continuous(limits = c(0,maxFreq), breaks = seq(0, maxFreq, by = 10))+
   theme_bw()+
   scale_fill_discrete(name = "Categorory", labels = c("Startle", "Non-Startle"))+
   theme(
     legend.position = "none",
     axis.title.x =element_blank(),
-    axis.title.y = element_blank()
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank()
   )
 
 ############################ Bayesian test of association ############################################
@@ -482,13 +505,14 @@ plotSCM_T3 <- ggplot(dataT3, aes(x=Latency, fill = Cat)) +
   facet_grid(rows = vars(SCM))+
   labs(y="Frequency", x="Pre-motor reaction time (ms)")+
   scale_x_continuous(limits = c(x_min, x_max), breaks = seq(x_min, x_max, by = 30))+
-  scale_y_continuous(limits = c(0,25), breaks = seq(0, 25, by = 10))+
+  scale_y_continuous(limits = c(0, maxFreq), breaks = seq(0, maxFreq, by = 10))+
   theme_bw()+
   scale_fill_discrete(name = "Categorory", labels = c("Startle", "Non-Startle"))+
   theme(
     legend.position = "none",
     axis.title.x =element_text(family="Arial", size=12),
-    axis.title.y =element_text(family="Arial", size=12)
+    axis.title.y =element_text(family="Arial", size=12),
+    axis.text.y = element_text(family="Arial", size=11)
   )
 
 ############################ Bayesian test of association ############################################
@@ -520,13 +544,14 @@ plotSCM_T4 <- ggplot(dataT4, aes(x=Latency, fill = Cat)) +
   facet_grid(rows = vars(SCM))+
   labs(y="Frequency", x="Pre-motor reaction time (ms)")+
   scale_x_continuous(limits = c(x_min, x_max), breaks = seq(x_min, x_max, by = 30))+
-  scale_y_continuous(limits = c(0,25), breaks = seq(0, 25, by = 10))+
+  scale_y_continuous(limits = c(0, maxFreq), breaks = seq(0, maxFreq, by = 10))+
   theme_bw()+
   scale_fill_discrete(name = "Categorory", labels = c("Startle", "Non-Startle"))+
   theme(
     legend.position = "none",
     axis.title.x = element_text(family="Arial", size=12),
-    axis.title.y = element_blank()
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank()
   )
 
 ############################ Bayesian test of association ############################################
@@ -544,7 +569,6 @@ plotSCM <- plotSCM_T1 + plotSCM_T2 + plotSCM_T3 + plotSCM_T4 +
     panel.grid.minor = element_blank(),
     strip.background = element_rect(colour="black", fill="white"),
     axis.text.x = element_text(family="Arial", size=11), 
-    axis.text.y = element_text(family="Arial", size=11),
     legend.text=element_text(family = "Arial", size=8),
     legend.title=element_blank()
   )
@@ -566,7 +590,7 @@ plotSCM
 pd <- position_dodge(0) #dodge plot overlaps
 quantile_means = rbind(MeansQuantT1, MeansQuantT2, MeansQuantT3, MeansQuantT4) #get mean quantile values for all tasks
 y_axis_min <- min(as.numeric(as.vector(quantile_means[['Latency']]))) - 10 #set boundaries for y axis based on min and max values
-y_axis_max <- max(as.numeric(as.vector(quantile_means[['Latency']]))) + 10 #adjust +-10 if you are cutting out se bars
+y_axis_max <- max(as.numeric(as.vector(quantile_means[['Latency']]))) + 20 #adjust +-10 if you are cutting out se bars
 
 # Round y axis to nearest 10
 y_axis_min <- Round(y_axis_min, 10) #(round x to nearest 10)
@@ -602,7 +626,8 @@ plotT1 <- ggplot(summaryQuantilesT1, aes(x=quant, y=Latency))+
   theme(
     legend.position="none",
     axis.title.x = element_blank(),
-    axis.title.y =element_text(family="Arial", size=12)
+    axis.title.y =element_text(family="Arial", size=12),
+    axis.text.y = element_text(family="Arial", size=11)
   )
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -638,7 +663,8 @@ plotT2 <- ggplot(summaryQuantilesT2, aes(x=quant, y=Latency))+
   theme(
     legend.position=c(.15,.8),
     axis.title.x = element_blank(),
-    axis.title.y = element_blank()
+    axis.title.y = element_blank(),
+    axis.text.y = element_blank()
   )
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -675,7 +701,8 @@ plotT3 <- ggplot(summaryQuantilesT3, aes(x=quant, y=Latency))+
   theme(
     legend.position="none",
     axis.title.y =element_text(family="Arial", size=12), 
-    axis.title.x =element_text(family="Arial", size=12)
+    axis.title.x =element_text(family="Arial", size=12),
+    axis.text.y = element_text(family="Arial", size=11)
   )
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -711,7 +738,8 @@ plotT4 <- ggplot(summaryQuantilesT4, aes(x=quant, y=Latency))+
   theme(
     legend.position="none",
     axis.title.y = element_blank(),
-    axis.title.x =element_text(family="Arial", size=12)
+    axis.title.x =element_text(family="Arial", size=12),
+    axis.text.y = element_blank()
   )
 
 
@@ -721,7 +749,6 @@ plotCDFs <- plotT1 + plotT2 + plotT3 + plotT4 +
   plot_annotation(tag_levels = "A") & #Labels for plots
   theme(
     axis.text.x = element_text(family="Arial", size=11), 
-    axis.text.y = element_text(family="Arial", size=11),
     panel.background = element_rect(fill = "transparent"), # bg of the panel
     plot.background = element_rect(fill = "transparent", color = NA) # bg of the plot
   )
@@ -742,6 +769,7 @@ plotCDFs
 #=============================== Categorising data - Task 1 ==========================================
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+#Get data in 4th percentile or earlier
 FastT1 <- c(storeQuantileT1$"5", storeQuantileT1$"15", storeQuantileT1$"25", storeQuantileT1$"35", storeQuantileT1$"45")
 FastT1 <- data.frame(FastT1)
 colnames(FastT1) <- "Latency"
@@ -750,6 +778,7 @@ FastT1$Task <- "Single"
 FastT1$Muscle <- "BB"
 FastT1$Subject <- storeQuantileT1$Subject
 
+#Get data in 55th percentile or later
 SlowT1 <- c(storeQuantileT1$"55", storeQuantileT1$"65", storeQuantileT1$"75", storeQuantileT1$"85", storeQuantileT1$"95")
 SlowT1 <- data.frame(SlowT1)
 colnames(SlowT1) <- "Latency"
@@ -899,7 +928,9 @@ plotM1<- ggplot(data=summaryM1,aes(y=Latency,x=Task,fill=Percentile))+
   theme_classic()+
   scale_fill_manual(labels = c("Fast onset", "Slower onset"), values=c("#C6DBEF", "#2171B5")) +
   scale_y_continuous(limits=c(ymin, ymax), breaks=seq(ymin, ymax, by = 40))+
-  theme(legend.position= c(.35, 1))
+  theme(legend.position= c(.35, 1),
+        axis.text.y = element_text(family="Arial", size=11)
+  )
 
 plotM2<- ggplot(data=summaryM2,aes(y=Latency,x=Task,fill=Percentile))+ 
   geom_bar(position = position_dodge(),stat="identity", colour="black") +
@@ -910,13 +941,13 @@ plotM2<- ggplot(data=summaryM2,aes(y=Latency,x=Task,fill=Percentile))+
   scale_fill_manual(labels = c("Fast onset", "Slower onset"), values=c("#C6DBEF", "#2171B5")) +
   scale_y_continuous(limits=c(ymin, ymax), breaks=seq(ymin, ymax, by = 40))+
   theme(legend.position= "none",
-        axis.title.y = element_blank()
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank()
   )
 
 plotCat <- plotM1 + plotM2 +
   plot_annotation(tag_levels = "A") & #Labels for plots
   theme(axis.text.x = element_text(family="Arial", size=11), 
-        axis.text.y = element_text(family="Arial", size=11),
         legend.title = element_blank()
   )
 plotCat
@@ -960,7 +991,9 @@ plotM1SCM <- ggplot(data = summaryM1SCM, aes(y= Latency, x = Task, fill = SCM))+
   theme_classic()+
   scale_fill_manual(labels = c("M1", "M2"), values=c("#C6DBEF", "#2171B5")) +
   scale_y_continuous(limits=c(ymin, ymax), breaks=seq(ymin, ymax, by = 40))+
-  theme(legend.position= c(.2, .95))
+  theme(legend.position= c(.2, 1),
+        axis.text.y = element_text(family="Arial", size=11)
+  )
 
 plotM2SCM <- ggplot(data = summaryM2SCM, aes(y= Latency, x = Task, fill = SCM))+ 
   geom_bar(position = position_dodge(),stat="identity", colour="black") +
@@ -970,12 +1003,13 @@ plotM2SCM <- ggplot(data = summaryM2SCM, aes(y= Latency, x = Task, fill = SCM))+
   scale_fill_manual(labels = c("M1", "M2"), values=c("#C6DBEF", "#2171B5")) +
   scale_y_continuous(limits=c(ymin, ymax), breaks=seq(ymin, ymax, by = 40))+
   theme(legend.position = "none",
-        axis.title.y = element_blank())
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank()
+  )
 
 plotSCM <- plotM1SCM + plotM2SCM +
   plot_annotation(tag_levels = "A") & 
-  theme(axis.text.x = element_text(family="Arial", size=11), 
-        axis.text.y = element_text(family="Arial", size=11)
+  theme(axis.text.x = element_text(family="Arial", size=11)
   )
 plotSCM
 
