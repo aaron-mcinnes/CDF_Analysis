@@ -1,3 +1,9 @@
+# This code simulates data based on the Castellote & Kofler (2018) dataset and runs the entire analyses of the 
+#exemplary data described in the main report.
+# The script will run summary stats, test multimodality, calculate CDFs, categorise data, find proportion of SCM+
+#trials in each category, run bayesian tests of association, and run linear mixed-effects models on the categorised
+#data. Plots for each main step are also produced.
+
 rm(list=ls()) 
 options(scipen=999)
 cat("\014")
@@ -13,10 +19,97 @@ library(patchwork)
 library(lmerTest)
 library(emmeans)
 
-directory <- dirname(rstudioapi::getSourceEditorContext()$path) #Directory of where script is saved
-dataFile <- paste0(directory, "/SimulatedData.xlsx")
-data <- read_excel(dataFile) #Read data from excel file
-data$Latency <- as.numeric(data$Latency)
+
+################################### Simulating data for analysis #####################################
+
+# Simulate data based on the representative Castellote & Kofler (2018) dataset
+# Generating random numbers from a normal distribution using paramaters similar to those found in our analyses in the main report
+# The final data frame contains columns for SCM(SCM+/SCM-), condition type, subject ID, and RT
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 1 SCM+ trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Subject <- rep(1:10, times = 5) #Participant IDs for each trial
+Cond <- rep("BB_Flex", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 101, sd = 11), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+BB_Flex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 2 SCM+ trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cond <- rep("FDI_Pinch", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 135, sd = 26), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+FDI_Pinch <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 3 SCM+ trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cond <- rep("BB_PinchFlex", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 109, sd = 23), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+BB_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 4 SCM+ trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cond <- rep("FDI_PinchFlex", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 117, sd = 22), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+FDI_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+# Put all SCM+ trials together
+SCMPlus <- rbind(BB_Flex, FDI_Pinch, BB_PinchFlex, FDI_PinchFlex)
+SCM <- rep("SCM+", times = nrow(SCMPlus))
+SCMPlus <- cbind(SCM, SCMPlus) #final data frame of SCM+ trials
+
+##### Generate SCM- trials
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 1 SCM- trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Subject <- rep(1:10, times = 5) #Participant IDs for each trial
+Cond <- rep("BB_Flex", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 139, sd = 41), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+BB_Flex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 2 SCM- trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cond <- rep("FDI_Pinch", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 155, sd = 44), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+FDI_Pinch <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 3 SCM- trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cond <- rep("BB_PinchFlex", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 165, sd = 51), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+BB_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#=================================== Task 4 SCM- trials ==============================================
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cond <- rep("FDI_PinchFlex", times = 50)
+Latency <- round(rnorm(length(Cond), mean = 172, sd = 53), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
+FDI_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
+
+# Put all SCM- trials together
+SCMMinus <- rbind(BB_Flex, FDI_Pinch, BB_PinchFlex, FDI_PinchFlex)
+SCM <- rep("SCM-", times = nrow(SCMMinus))
+SCMMinus <- cbind(SCM, SCMMinus) #final data frame of SCM+ trials
+
+################################### Put final data together ##########################################
+
+data <- rbind(SCMPlus, SCMMinus)
+data$Latency <- as.numeric(as.character(data$Latency))
+
+######################################## Run analyses ################################################
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #============================= Means for each condition ==============================================
@@ -180,7 +273,7 @@ t.test(Medians_SCM_PlusT4$Latency, Medians_SCM_MinusT4$Latency, paired = T, conf
 # Contains function to repeat across movement types - 
 # Enter the dataframe you want to test and the mean SCM+/- values
 # Get 10 quantile values for each subject and place into data frame
-# Average across participants to get mean latency at each quantile
+# Average across participants to get mean Latency at each quantile
 # Find the percentiles that closest match average SCM+ and SCM- trial latencies
 
 Ps <- levels(as.factor(dataTask$Subject)) #List of subject IDs
@@ -364,7 +457,7 @@ sd(storeQuantileT4[,match_rowMinusT4])
 #############    LOOKING AT PROPORTION OF SCM IN FAST VS SLOW CATEGORIES   ###########################
 ######################################################################################################
 
-#Group trials into fast (latency <= SCM+ Percentile) and slow (latency >= SCM- Percentile) categories
+#Group trials into fast (Latency <= SCM+ Percentile) and slow (Latency >= SCM- Percentile) categories
 #Get number of SCM+ trials that occur in each category, calculate %
 #Plot histogram of SCM distribution in each category
 #Run Bayesian test of association - test dependence of percentile categorisation with SCM activity
@@ -408,9 +501,9 @@ x_max <- Round(x_max, 10)
 
 #Splitting data into fast and slow categories
 dataTask <- dataFlex
-dataFastT1 <- dataTask[(dataTask$Latency <= mean(storeQuantileT1[,match_rowPlusT1])),] #Get trials shorter than SCM+ percentile latency
+dataFastT1 <- dataTask[(dataTask$Latency <= mean(storeQuantileT1[,match_rowPlusT1])),] #Get trials shorter than SCM+ percentile Latency
 dataFastT1$Cat <- "Fast"
-dataSlowT1 <-dataTask[(dataTask$Latency >= mean(storeQuantileT1[,match_rowMinusT1])),] #Get trials longer than SCM- percentile latency
+dataSlowT1 <-dataTask[(dataTask$Latency >= mean(storeQuantileT1[,match_rowMinusT1])),] #Get trials longer than SCM- percentile Latency
 dataSlowT1$Cat <- "Slow"
 dataT1 <- rbind(dataFastT1, dataSlowT1) #Hold both groups together
 
@@ -448,9 +541,9 @@ contingencyTableBF(crosstab, sampleType = "jointMulti" ) #Bayesian test of assoc
 
 #Splitting data into fast and slow categories
 dataTask <- dataPinch
-dataFastT2 <- dataTask[(dataTask$Latency <= mean(storeQuantileT2[,match_rowPlusT2])),] #Get trials shorter than SCM+ percentile latency
+dataFastT2 <- dataTask[(dataTask$Latency <= mean(storeQuantileT2[,match_rowPlusT2])),] #Get trials shorter than SCM+ percentile Latency
 dataFastT2$Cat <- "Fast"
-dataSlowT2 <-dataTask[(dataTask$Latency >= mean(storeQuantileT2[,match_rowMinusT2])),] #Get trials longer than SCM- percentile latency
+dataSlowT2 <-dataTask[(dataTask$Latency >= mean(storeQuantileT2[,match_rowMinusT2])),] #Get trials longer than SCM- percentile Latency
 dataSlowT2$Cat <- "Slow"
 dataT2 <- rbind(dataFastT2, dataSlowT2) #Hold both groups together
 
@@ -487,9 +580,9 @@ contingencyTableBF(crosstab, sampleType = "jointMulti" ) #Bayesian test of assoc
 
 #Splitting data into fast and slow categories
 dataTask <- dataBB_PinchFlex
-dataFastT3 <- dataTask[(dataTask$Latency <= mean(storeQuantileT3[,match_rowPlusT3])),] #Get trials shorter than SCM+ percentile latency
+dataFastT3 <- dataTask[(dataTask$Latency <= mean(storeQuantileT3[,match_rowPlusT3])),] #Get trials shorter than SCM+ percentile Latency
 dataFastT3$Cat <- "Fast"
-dataSlowT3 <-dataTask[(dataTask$Latency >= mean(storeQuantileT3[,match_rowMinusT3])),] #Get trials longer than SCM- percentile latency
+dataSlowT3 <-dataTask[(dataTask$Latency >= mean(storeQuantileT3[,match_rowMinusT3])),] #Get trials longer than SCM- percentile Latency
 dataSlowT3$Cat <- "Slow"
 dataT3 <- rbind(dataFastT3, dataSlowT3) #Hold both groups together
 
@@ -526,9 +619,9 @@ contingencyTableBF(crosstab, sampleType = "jointMulti" ) #Bayesian test of assoc
 
 #Splitting data into fast and slow categories
 dataTask <- dataFDI_PinchFlex
-dataFastT4 <- dataTask[(dataTask$Latency <= mean(storeQuantileT4[,match_rowPlusT4])),] #Get trials shorter than SCM+ percentile latency
+dataFastT4 <- dataTask[(dataTask$Latency <= mean(storeQuantileT4[,match_rowPlusT4])),] #Get trials shorter than SCM+ percentile Latency
 dataFastT4$Cat <- "Fast"
-dataSlowT4 <-dataTask[(dataTask$Latency >= mean(storeQuantileT4[,match_rowMinusT4])),] #Get trials longer than SCM- percentile latency
+dataSlowT4 <-dataTask[(dataTask$Latency >= mean(storeQuantileT4[,match_rowMinusT4])),] #Get trials longer than SCM- percentile Latency
 dataSlowT4$Cat <- "Slow"
 dataT4 <- rbind(dataFastT4, dataSlowT4) #Hold both groups together
 
