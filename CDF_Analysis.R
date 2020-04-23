@@ -32,6 +32,7 @@ library(emmeans)
 
 Subject <- rep(1:10, times = 5) #Participant IDs for each trial
 Cond <- rep("BB_Flex", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 101, sd = 11), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 BB_Flex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -40,6 +41,7 @@ BB_Flex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cond <- rep("FDI_Pinch", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 135, sd = 26), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 FDI_Pinch <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -48,6 +50,7 @@ FDI_Pinch <- data.frame(cbind(Subject, Cond, Latency)) #data frame with conditio
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cond <- rep("BB_PinchFlex", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 109, sd = 23), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 BB_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -56,6 +59,7 @@ BB_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cond <- rep("FDI_PinchFlex", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 117, sd = 22), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 FDI_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -70,8 +74,8 @@ SCMPlus <- cbind(SCM, SCMPlus) #final data frame of SCM+ trials
 #=================================== Task 1 SCM- trials ==============================================
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Subject <- rep(1:10, times = 5) #Participant IDs for each trial
 Cond <- rep("BB_Flex", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 139, sd = 41), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 BB_Flex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -80,6 +84,7 @@ BB_Flex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cond <- rep("FDI_Pinch", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 155, sd = 44), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 FDI_Pinch <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -88,6 +93,7 @@ FDI_Pinch <- data.frame(cbind(Subject, Cond, Latency)) #data frame with conditio
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cond <- rep("BB_PinchFlex", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 165, sd = 51), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 BB_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -96,6 +102,7 @@ BB_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Cond <- rep("FDI_PinchFlex", times = 50)
+set.seed(123)
 Latency <- round(rnorm(length(Cond), mean = 172, sd = 53), digits = 2) #generate random numbers from normal distribution, define mu and sd, and round
 FDI_PinchFlex <- data.frame(cbind(Subject, Cond, Latency)) #data frame with condition type, RT, and participant ID
 
@@ -1075,7 +1082,7 @@ summaryM1SCM <- summarySEwithin(dataM1, measurevar="Latency", withinvars=c("SCM"
 summaryM2SCM <- summarySEwithin(dataM2, measurevar="Latency", withinvars=c("SCM", "Task"), idvar="Subject")
 
 ymin <- 0
-ymax <- Round(max(rbind(summaryM1SCM$Latency, summaryM2SCM$Latency)) + 10, 10)
+ymax <- Round(max(rbind(summaryM1SCM$Latency, summaryM2SCM$Latency)) + 15, 10)
 
 plotM1SCM <- ggplot(data = summaryM1SCM, aes(y= Latency, x = Task, fill = SCM))+ 
   geom_bar(position = position_dodge(),stat="identity", colour="black") +
@@ -1113,7 +1120,7 @@ plotSCM
 summarySCMPlus <- summarySEwithin(dataPlus, measurevar="Latency", withinvars=c("Task", "Muscle"), idvar="Subject")
 
 ymin <- 0
-ymax <- Round(max(dataPlus$Latency) + 10, 10)
+ymax <- Round(max(summarySCMPlus$Latency) + 10, 10)
 
 
 plotSCMPlus <- ggplot(data = summarySCMPlus, aes(y= Latency, x = Task, fill = Muscle))+ 
